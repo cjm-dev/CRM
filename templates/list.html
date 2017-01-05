@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="myApp">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="../../favicon.ico">
+
+    <title>Remote Cluster Management</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="static/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <link href="static/css/jumbotron-narrow.css" rel="stylesheet">
+    <link href="./../static/css/dashboard.css" rel="stylesheet">
+
+    <script src="static/js/angular.js"></script>
+
+    <script>
+        angular.module('myApp', [])
+            .controller('HomeCtrl', function($scope, $http) {
+			
+				$scope.info = {};
+				
+				$scope.showAdd = true;
+			
+				$scope.showlist = function(){
+					$http({
+						method: 'POST',
+						url: '/getMachineList',
+
+					}).then(function(response) {
+						$scope.machines = response.data;
+						console.log('mm',$scope.machines);
+					}, function(error) {
+						console.log(error);
+					});
+				}
+			
+                
+				
+				$scope.addMachine = function(){
+					
+					
+					
+					$http({
+						method: 'POST',
+						url: '/addMachine',
+						data: {info:$scope.info}
+					}).then(function(response) {
+						$scope.showlist();
+						$('#addPopUp').modal('hide')
+						$scope.info = {}
+					}, function(error) {
+						console.log(error);
+					});
+				}
+				
+				$scope.editMachine = function(id){
+					$scope.info.id = id;
+					
+					$scope.showAdd = false;
+					
+					$http({
+						method: 'POST',
+						url: '/getMachine',
+						data: {id:$scope.info.id}
+					}).then(function(response) {
+						console.log(response);
+						$scope.info = response.data;
+						$('#addPopUp').modal('show')
+					}, function(error) {
+						console.log(error);
+					});
+				}
+				
+				$scope.updateMachine = function(id){
+				
+					$http({
+						method: 'POST',
+						url: '/updateMachine',
+						data: {info:$scope.info}
+					}).then(function(response) {
+						console.log(response.data);
+						$scope.showlist();
+						$('#addPopUp').modal('hide')
+					}, function(error) {
+						console.log(error);
+					});
+				}
+				
+		
+				$scope.showAddPopUp = function(){
+					$scope.showAdd = true;
+					$scope.info = {};
+					$('#addPopUp').modal('show')
+				}
+				
+				$scope.showRunPopUp = function(id){
+				
+					$scope.info.id = id;
+					$scope.run = {};
+					
+					
+					
+					
+					$http({
+						method: 'POST',
+						url: '/getMachine',
+						data: {id:$scope.info.id}
+					}).then(function(response) {
+						console.log(response);
+						$scope.run = response.data;
+						$scope.run.isRoot = false;
+						$('#runPopUp').modal('show');
+					}, function(error) {
+						console.log(error);
+					});
+				
+					
+					
+				}
+				
+				$scope.confirmDelete = function(id){
+					$scope.deleteMachineId = id;
+					$('#deleteConfirm').modal('show');
+				}
+				
+				$scope.deleteMachine = function(){
+					
+					$http({
+						method: 'POST',
+						url: '/deleteMachine',
+						data: {id:$scope.deleteMachineId}
+					}).then(function(response) {
+						console.log(response.data);
+						$scope.deleteMachineId = '';
+						$scope.showlist();
+						$('#deleteConfirm').modal('hide')
+					}, function(error) {
+						console.log(error);
+					});
+				}
+				
+				
+				$scope.executeCommand = function(){
+					
+					
+					console.log($scope.run);
+					
+					$http({
+						method: 'POST',
+						url: '/execute',
+						data: {info:$scope.run}
+					}).then(function(response) {
+						console.log(response);
+						$scope.run.response = response.data.message;
+					}, function(error) {
+						console.log(error);
+					});
+				}
+
+				$scope.findNodes = function(){
+
+
+					console.log($scope.run);
+
+					$http({
+						method: 'POST',
+						url: '/findNodes',
+						data: {info:$scope.run}
+					}).then(function(response) {
+						console.log(response);
+						$scope.run.response = response.data.message;
+					}, function(error) {
+						console.log(error);
+					});
+				}
+				$scope.showlist();
+            })
+            .controller("UserCtrl", function($scope, $http) {
+                $scope.test1 = "test0"
+                console.log($scope.test1)
+
+                $scope.get_user = function() {
+                    $http({
+                        method: 'GET',
+                        url: '/',
+                    }).then(function(response){
+                        $scope.logged_in = response.data;
+                        console.log($scope.logged_in);
+                    }, function(error) {
+                        console.log(error);
+                    });
+                }
+                $scope.get_user();
+            })
+
+    </script>
+    <script src="static/js/socket.io.min.js"></script>
+    <script src="static/js/jquery.min.js"></script>
+    <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+
+
+            // Use a "/test" namespace.
+            // An application can open a connection on multiple namespaces, and
+            // Socket.IO will multiplex all those connections on a single
+            // physical channel. If you don't care about multiple channels, you
+            // can set the namespace to an empty string.
+            namespace = '/test';
+
+
+            // Connect to the Socket.IO server.
+            // The connection URL has the following format:
+            //     http[s]://<domain>:<port>[/<namespace>]
+            var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port + namespace);
+
+            // Event handler for new connections.
+            // The callback function is invoked when a connection with the
+            // server is established.
+            socket.on('connect', function() {
+                socket.emit('my_event', {data: 'I\'m connected2!'});
+            });
+
+            // Event handler for server sent data.
+            // The callback function is invoked whenever the server emits data
+            // to the client. The data is then displayed in the "Received"
+            // section of the page.
+            socket.on('my_response', function(msg) {
+                $('#log'+msg.type).append('<br>' + $('<div/>').text('Received #' + msg.count + ': ' + msg.data +':' + msg.type).html());
+               // $('#log'+msg.type).text('Received #:' + msg.count + ': ' + msg.data ).html();
+                //$('#log'+msg.type).append('<br>' + $('#' + msg.sub).text('Received #:' + msg.count + ': ' + msg.data).html());
+            });
+
+            // Interval function that tests message latency by sending a "ping"
+            // message. The server then responds with a "pong" message and the
+            // round trip time is measured.
+            var ping_pong_times = [];
+            var start_time;
+            window.setInterval(function() {
+                start_time = (new Date).getTime();
+                socket.emit('my_ping');
+            }, 1000);
+
+            // Handler for the "pong" message. When the pong is received, the
+            // time from the ping is stored, and the average of the last 30
+            // samples is average and displayed.
+            socket.on('my_pong', function() {
+                var latency = (new Date).getTime() - start_time;
+                ping_pong_times.push(latency);
+                ping_pong_times = ping_pong_times.slice(-30); // keep last 30 samples
+                var sum = 0;
+                for (var i = 0; i < ping_pong_times.length; i++)
+                    sum += ping_pong_times[i];
+                $('#ping-pong').text(Math.round(10 * sum / ping_pong_times.length) / 10);
+            });
+
+            // Handlers for the different forms in the page.
+            // These accept data from the user and send it to the server in a
+            // variety of ways
+            $('form#emit').submit(function(event) {
+                var test = {'ip':'10.0.0.6', 'command': 'cpu'}
+                socket.emit('my_event', {data: $('#emit_data').val()});
+                //socket.emit('my_event', {data: "10.0.2.6;cpu"});
+                console.log(test)
+                return false;
+            });
+            $('form#broadcast').submit(function(event) {
+                socket.emit('my_broadcast_event', {data: $('#broadcast_data').val()});
+                return false;
+            });
+            $('form#close').submit(function(event) {
+                socket.emit('close_room', {room: $('#close_room').val()});
+                return false;
+            });
+            $('form#disconnect').submit(function(event) {
+                socket.emit('disconnect_request');
+                return false;
+            });
+        });
+    </script>
+
+ <link rel="stylesheet" href="./../static/css/style.css">
+</head>
+
+<body>
+<div class="container">
+    <!--
+    <p>Async mode is: <b>{{ async_mode }}</b></p>
+    <p>Average ping/pong latency: <b><span id="ping-pong"></span>ms</b></p>
+
+    <form id="disconnect" method="POST" action="#">
+        <input type="submit" value="Disconnect">
+    </form>
+    <h2>Receive:</h2>
+    <div id="log"></div> -->
+</div>
+<div class="container-fluid" ng-controller="HomeCtrl">
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="#">Remote Cluster Management Tool</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav navbar-right">
+            <li><a href="#">Dashboard</a></li>
+            <li><a href="#">Settings</a></li>
+            <li><a href="#">Profile</a></li>
+            <li><a href="/logout">Logout</a></li>
+          </ul>
+          <form class="navbar-form navbar-right">
+            <input type="text" class="form-control" placeholder="Search...">
+          </form>
+        </div>
+      </div>
+    </nav>
+
+     <div class="container-fluid">
+      <div class="row">
+        <div class="col-sm-3 col-md-2 sidebar">
+          <ul class="nav nav-sidebar">
+            <li class="active"><a href="#">Overview <span class="sr-only">(current)</span></a></li>
+            <li><a href="#"></a></li>
+            <li><a href="#" data-toggle="modal" ng-click="showAddPopUp()">Add a Node</a></li>
+            <li><a href="#"></a></li>
+          </ul>
+          <ul class="nav nav-sidebar">
+            <li><a href=""></a></li>
+            <li><a href=""></a></li>
+            <li><a href=""></a></li>
+            <li><a href=""></a></li>
+            <li><a href=""></a></li>
+          </ul>
+          <ul class="nav nav-sidebar">
+            <li><a href=""></a></li>
+            <li><a href=""></a></li>
+            <li><a href=""></a></li>
+          </ul>
+        </div>
+        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+
+          <h1 class="page-header">Dashboard</h1>
+
+          <div class="row placeholders">
+
+
+            <div class="col-xs-6 col-sm-3 placeholder">
+                <h4>IP: 10.0.2.6</h4>
+                <span class="text-muted">CPU Utilization</span>
+                <div id="chart"></div>
+              <!--<img src="data:image/gif;base64,R0lGODlhAQABAIAAAHd3dwAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==" width="200" height="200" class="img-responsive" alt="Generic placeholder thumbnail"> -->
+
+            </div>
+
+            <div class="col-xs-6 col-sm-3 placeholder">
+
+              <h4>IP: 10.0.2.4</h4>
+             <!--   <span class="text-muted">CPU Utilization</span>-->
+                <div id="logB" style="color:#CB4B19" overflow:auto></div>
+
+            </div>
+            <div class="col-xs-6 col-sm-3 placeholder">
+
+              <h4>IP: 10.0.2.6</h4>
+               <!-- <span class="text-muted">CPU Utilization</span>-->
+                <div id="logA" style="color:#428db4"></div>
+
+            </div>
+
+            <div class="col-xs-6 col-sm-3 placeholder">
+
+              <h4>IP: 10.0.2.5</h4>
+                <!--<span class="text-muted">CPU Utilization</span>-->
+                <div id="logC" style="color:#255625"></div>
+            </div>
+          </div>
+
+          <!-- BEGIN TABLE data -->
+          <h2 class="sub-header">Node List</h2>
+          <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Machine Name</th>
+                        <th>IP Address</th>
+                        <th>Port</th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr ng-repeat="machine in machines track by $index">
+                        <th scope="row">{{'{{$index+1}}'}}</th>
+                        <td>{{ '{{machine.device}}' }}</td>
+                        <td>{{ '{{machine.ip}}' }}</td>
+                        <td>{{'{{machine.port}}'}}</td>
+                        <td><span style="cursor:pointer;" ng-click="editMachine(machine.id)" class="glyphicon glyphicon-pencil" aria-hidden="true"></span></td>
+                        <td><span style="cursor:pointer;color:#e43309;" ng-click="confirmDelete(machine.id)" class="glyphicon glyphicon-remove" aria-hidden="true"></span></td>
+                        <td><span style="cursor:pointer;color:#3c763d;" ng-click="showRunPopUp(machine.id)" class="glyphicon glyphicon-play" aria-hidden="true"></span></td>
+                    </tr>
+                    </tbody>
+                </table>
+          </div> <!-- END of Table data -->
+
+
+        </div>
+      </div>
+     </div> <!-- end of container-fluid-->
+
+    <!-- CJM :Remeber to shift this link in the sidebar
+    <div class="container">
+        <div class="header clearfix">
+            <nav>
+                <ul class="nav nav-pills pull-right">
+                    <li role="presentation" class="active"><a href="#" data-toggle="modal" ng-click="showAddPopUp()" >Add</a></li>
+                </ul>
+            </nav>
+
+        </div>
+
+
+    </div>
+    -->
+
+    <div class="modal fade" id="addPopUp" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="exampleModalLabel" >Add machine info</h4>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="form-group">
+                            <label for="txtDevice" class="control-label">Device Name:</label>
+                            <input type="text" class="form-control" ng-model="info.device" id="txtDevice">
+                        </div>
+                        <div class="form-group">
+                            <label for="txtIP" class="control-label">IP Address:</label>
+                            <input type="text" class="form-control" ng-model="info.ip" id="txtIP">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="txtPort" class="control-label">Port:</label>
+                            <input type="text" class="form-control" ng-model="info.port" id="txtPort">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button"  class="btn btn-default" data-dismiss="modal">Close</button>
+                    <button ng-show="showAdd" id="btnAdd" ng-click="addMachine()" type="button" class="btn btn-primary">Add machine</button>
+			
+					<button ng-show="!showAdd" id="btnAdd" ng-click="updateMachine()" type="button" class="btn btn-primary">Update</button>
+                </div>
+            </div>
+        </div>
+    </div>
+	
+
+
+	
+	
+
+	
+	
+	<div id="deleteConfirm" class="modal fade bs-example-modal-md in" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel">
+		<div class="modal-dialog modal-lg">
+			<div class="modal-content">
+				<div class="modal-header"> <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+					<h4 class="modal-title" id="myLargeModalLabel">You are about to delete this entry. Do you want to proceed ?</h4> </div>
+				
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+					<button type="button" ng-click="deleteMachine()" class="btn btn-primary">Delete</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	
+	
+	 <div class="modal fade" id="runPopUp" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="exampleModalLabel" >Remote execution interface</h4>
+                </div>
+                <div class="modal-body">
+                    <form>
+                       
+                        <div class="form-group">
+                            <label for="txtIP" class="control-label">IP Address:</label>
+                            <input type="text" class="form-control" ng-model="run.ip" id="txtRunIP">
+                        </div>
+
+						
+						<div class="form-group">
+                            <label for="txtPassword" class="control-label">Command:</label>
+                            <input type="text" class="form-control" ng-model="run.command" id="txtRunCommand">
+                        </div>
+						<!--
+						<div class="form-group">
+							 <label><input type="checkbox" ng-model="run.isRoot" ng-true-value="true" ng-false-value="false" value="">Run as Admin</label>
+						</div>
+						-->
+						<div class="form-group">
+                            <label for="txtPassword" class="control-label">Response:</label>
+                            <textarea type="text" class="form-control" ng-model="run.response" id="txtRunResponse"></textarea>
+                        </div>
+                       
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button"  class="btn btn-default" data-dismiss="modal">Close</button>
+                    <button  id="btnExecute" ng-click="executeCommand()" type="button" class="btn btn-primary">Execute</button>
+			
+					
+                </div>
+            </div>
+        </div>
+			
+    </div>
+	
+</div>
+    <script src="static/js/jquery.min.js"></script>
+    <script src="static/js/bootstrap.min.js"></script>
+    <script src="static/js/d3.v3.js"></script>
+    <script src="static/js/cpu.js"></script>
+    <!--<script src="static/js/script.js"></script>-->
+
+</body>
+
+</html>
