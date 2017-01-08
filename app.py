@@ -87,8 +87,8 @@ def addMachine():
         json_data = request.json['info']
         deviceName = json_data['device']
         ipAddress = json_data['ip']
-        userName = 'christine'
-        password = 'c1740tks@88'
+        userName = 'xxxx' 
+        password = 'xxxx'
         portNumber = json_data['port']
 
         db.Machines.insert_one({
@@ -113,8 +113,8 @@ def getMachine():
         machineDetail = {
             'device': machine['device'],
             'ip': machine['ip'],
-            'username': 'christine',
-            'password': 'c1740tks@88',
+            'username': 'xxxx',
+            'password': 'xxxx',
             'port': machine['port'],
             'id': str(machine['_id'])
         }
@@ -130,8 +130,8 @@ def updateMachine():
         machineId = machineInfo['id']
         device = machineInfo['device']
         ip = machineInfo['ip']
-        username = 'christine'
-        password = 'c1740tks@88'
+        username = 'xxxx'
+        password = 'xxxx'
         port = machineInfo['port']
 
         db.Machines.update_one({'_id': ObjectId(machineId)}, {
@@ -152,8 +152,8 @@ def getMachineList():
             machineItem = {
                 'device': machine['device'],
                 'ip': machine['ip'],
-                'username': 'christine',
-                'password': 'c1740tks@88',
+                'username': 'xxxx',
+                'password': 'xxxx',
                 'port': machine['port'],
                 'id': str(machine['_id'])
             }
@@ -168,8 +168,8 @@ def execute():
     try:
         machineInfo = request.json['info']
         ip = machineInfo['ip']
-        username = 'christine'
-        password = 'c1740tks@88'
+        username = 'xxxx'
+        password = 'xxxx'
         command = machineInfo['command']
         isRoot = machineInfo['isRoot']
 
@@ -201,8 +201,8 @@ def deleteMachine():
 def findNodes():
     try:
         ip = '10.0.2.6'
-        username = 'christine'
-        password = 'c1740tks@88'
+        username = 'xxxx'
+        password = 'xxxx'
         isRoot = True
         command = 'arp-scan --interface=eth0 --localnet'
         env.host_string = username + '@' + ip
@@ -227,10 +227,10 @@ def background_thread():
         socketio.sleep(5)
         count += 1
         ip_list = ["10.0.2.6", "10.0.2.4", "10.0.2.5"]
-        username = 'christine'
-        password = 'c1740tks@88'
-        shell_path = "/home/christine/PythonFlaskRemoteApp-master/static/shell_files/"
-        command = "/home/christine/PythonFlaskRemoteApp-master/static/shell_files/cpu_utilization.sh"
+        username = 'xxxx'
+        password = 'xxxx'
+        shell_path = "/home/xxxx/PythonFlaskRemoteApp-master/static/shell_files/"
+        command = "/home/xxxx/PythonFlaskRemoteApp-master/static/shell_files/cpu_utilization.sh"
         command_list = ['cpu_utilization.sh', 'current_ram.sh', 'load_avg.sh' ]
         for x in range(0,3):
             if x == 0:
